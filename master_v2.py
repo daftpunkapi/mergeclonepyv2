@@ -9,8 +9,10 @@ from pymongo import MongoClient
 username = "daftpunkapi@gmail.com"
 password = "38nMKRsJFK2CGA57Dr3F7539"
 
+subdomain = input("Enter Sub-Domain:\n")
+
 response = requests.get(
-    url = "https://dpapi55.atlassian.net/rest/api/3/search",
+    url = "https://"+subdomain+".atlassian.net/rest/api/3/search",
     auth = (username, password))
 
 # Convert JSON repsonse of External API into Dict object 
@@ -41,12 +43,20 @@ for i in range(len(link)):
         
 
 # Define which fields we care about using dot notation for nested fields.
-FIELDS_OF_INTEREST = ["id", "fields.summary", "fields.assignee.displayName", "fields.issuetype.name", "fields.parent.id" , "fields.duedate", "fields.status.name", "CommonStatus", "fields.priority.name"]
+FIELDS_OF_INTEREST = ["id", "key", "fields.summary", "fields.assignee.displayName", "fields.issuetype.name", "fields.parent.id" , "fields.duedate", "fields.status.name", "CommonStatus", "fields.priority.name"]
 
 # # Filter to only display the fields we care about. To actually filter them out use df = df[FIELDS_OF_INTEREST].
 data = df[FIELDS_OF_INTEREST]
+
+# concate custom ticket URL 
+data["ticket_url"] = "https://"+subdomain+".atlassian.net/browse/"+data["key"]
+
+# Appending Attachment from loop output to main DF
 data = pd.merge(data,link, on ="id", how = "inner")
+
+# dropping column containing issueAPI URL
 data = data.drop(["self"],axis=1)
+
 # print(data)
 
 # Connect to MongoDB
