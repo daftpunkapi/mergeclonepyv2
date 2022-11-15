@@ -57,20 +57,20 @@ data = pd.merge(data,link, on ="id", how = "inner")
 # dropping column containing issueAPI URL
 data = data.drop(["self"],axis=1)
 
-# print(data)
+print(data)
 
-# Connect to MongoDB
-client =  MongoClient("mongodb+srv://daft:punk@mergedev.iiiixxn.mongodb.net/?retryWrites=true&w=majority")
-db = client['Ticket_Common_Model']
-collection = db['Jira']
+# # Connect to MongoDB
+# client =  MongoClient("mongodb+srv://daft:punk@mergedev.iiiixxn.mongodb.net/?retryWrites=true&w=majority")
+# db = client['Ticket_Common_Model']
+# collection = db['Jira']
 
-# Delete existing content in MongoDB
-x = collection.delete_many({})
-print(x.deleted_count," documents deleted")
+# # Delete existing content in MongoDB
+# x = collection.delete_many({})
+# print(x.deleted_count," documents deleted")
 
 
-data.reset_index(inplace=True)
-data_dict = data.to_dict("records")
+# data.reset_index(inplace=True)
+# data_dict = data.to_dict("records")
 
-# Insert collection
-collection.insert_many(data_dict)
+# # Insert collection
+# collection.insert_many(data_dict)
