@@ -72,7 +72,7 @@ collection = db['Github']
 x = collection.delete_many({})
 print(x.deleted_count," documents deleted")
 
-data.reset_index(drop=bool, inplace=True)
+data.reset_index(drop= True, inplace=True)
 data_dict = data.to_dict("records")
 
 
