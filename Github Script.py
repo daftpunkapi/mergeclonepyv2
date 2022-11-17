@@ -6,6 +6,7 @@ import pandas as pd
 import requests
 import json
 from pymongo import MongoClient
+import numpy as np
 
 # Get data from External API
 username = "raghav23mehta@gmail.com"
@@ -30,8 +31,36 @@ data = df[FIELDS_OF_INTEREST]
 # Opioniated unified model for Status
 data["state"] =  ["DONE" if x =="closed" else "NOT DONE" for x in df["state"]]
 
-# Hard - coding issue for all ticket types 
+# Hard - coding fields for null return from External API
 data ["ticket_type"] = "Issue"
+data["due_date"] = np.nan
+data["parent_ticket"] = np.nan
+data["attachments"] = np.nan
+data["priority"] = np.nan 
+
+# rename column names
+data = data.rename(columns = {
+    'id':'remote_id',
+     'title':'name',
+     'assignee.login':'assignee',
+     'state':'status',
+     'url':'ticket_url',
+     'body':'description',
+    })
+
+# change order of columns
+data = data[[
+ 'remote_id',
+ 'name',
+ 'assignee',
+ 'due_date',
+ 'status',
+ 'description',
+ 'ticket_type',
+ 'parent_ticket',
+ 'attachments',
+ 'ticket_url',
+ 'priority']]
 
 
 # Connect to MongoDB
@@ -43,8 +72,9 @@ collection = db['Github']
 x = collection.delete_many({})
 print(x.deleted_count," documents deleted")
 
-data.reset_index(inplace=True)
+data.reset_index(drop=bool, inplace=True)
 data_dict = data.to_dict("records")
+
 
 # Insert collection
 collection.insert_many(data_dict)

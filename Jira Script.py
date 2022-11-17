@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 import json
 from pymongo import MongoClient
-
+import numpy as np
 
 # Get data from External API
 username = "daftpunkapi@gmail.com"
@@ -41,9 +41,8 @@ for i in range(len(link)):
         attach[j] = temp["fields"]["attachment"][j]["filename"]
     link["attachments"][i] = attach
         
-
 # Define which fields we care about using dot notation for nested fields.
-FIELDS_OF_INTEREST = ["id", "key", "fields.summary", "fields.assignee.displayName", "fields.issuetype.name", "fields.parent.id" , "fields.duedate", "fields.status.name", "CommonStatus", "fields.priority.name"]
+FIELDS_OF_INTEREST = ["id", "key", "fields.summary", "fields.assignee.displayName", "fields.issuetype.name", "fields.parent.id" , "fields.duedate", "CommonStatus", "fields.priority.name"]
 
 # # Filter to only display the fields we care about. To actually filter them out use df = df[FIELDS_OF_INTEREST].
 data = df[FIELDS_OF_INTEREST]
@@ -54,23 +53,71 @@ data["ticket_url"] = "https://"+subdomain+".atlassian.net/browse/"+data["key"]
 # Appending Attachment from loop output to main DF
 data = pd.merge(data,link, on ="id", how = "inner")
 
-# dropping column containing issueAPI URL
+# dropping column containing issueAPI URL and Index
 data = data.drop(["self"],axis=1)
 
-print(data)
+# Run loop on description 
+# desc = df["fields.description.content"]
+# desc_json = pd.json_normalize(desc, errors='ignore',  max_level=None)
 
-# # Connect to MongoDB
-# client =  MongoClient("mongodb+srv://daft:punk@mergedev.iiiixxn.mongodb.net/?retryWrites=true&w=majority")
-# db = client['Ticket_Common_Model']
-# collection = db['Jira']
+link["attachments"] = ""
+for i in range(len(link)):
+    temp = requests.get(
+    url = link["self"][i],
+    auth = (username, password))
+    temp = json.loads(temp.text)
+    n = len(temp["fields"]["attachment"])
+    attach = [1]*n
+    for j in range(n):
+        attach[j] = temp["fields"]["attachment"][j]["filename"]
+    link["attachments"][i] = attach
 
-# # Delete existing content in MongoDB
-# x = collection.delete_many({})
-# print(x.deleted_count," documents deleted")
+
+# # Hard - coding fields for null return from External API
+data ["description"] = np.nan
 
 
-# data.reset_index(inplace=True)
-# data_dict = data.to_dict("records")
+# # rename column names
+data = data.rename(columns = {
+    'id':'remote_id',
+      'fields.summary':'name',
+      'fields.assignee.displayName':'assignee',
+      'CommonStatus':'status',
+      'fields.issuetype.name':'ticket_type',
+      'fields.parent.id':'parent_ticket',
+      'fields.duedate': 'due_date',
+      'fields.priority.name':'priority'
+    })
 
-# # Insert collection
-# collection.insert_many(data_dict)
+# Drop 
+
+# # change order of columns
+data = data[[
+  'remote_id',
+  'name',
+  'assignee',
+  'due_date',
+  'status',
+  'description',
+  'ticket_type',
+  'parent_ticket',
+  'attachments',
+  'ticket_url',
+  'priority']]
+
+
+# Connect to MongoDB
+client =  MongoClient("mongodb+srv://daft:punk@mergedev.iiiixxn.mongodb.net/?retryWrites=true&w=majority")
+db = client['Ticket_Common_Model']
+collection = db['Jira']
+
+# Delete existing content in MongoDB
+x = collection.delete_many({})
+print(x.deleted_count," documents deleted")
+
+
+data.reset_index(drop=bool, inplace=True)
+data_dict = data.to_dict("records")
+
+# Insert collection
+collection.insert_many(data_dict)
