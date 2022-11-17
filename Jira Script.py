@@ -3,7 +3,7 @@ import pandas as pd
 import requests
 import json
 from pymongo import MongoClient
-import numpy as np
+# import numpy as np
 
 # Get data from External API
 username = "daftpunkapi@gmail.com"
@@ -40,7 +40,9 @@ for i in range(len(link)):
     for j in range(n):
         attach[j] = temp["fields"]["attachment"][j]["filename"]
     link["attachments"][i] = attach
-        
+
+del (i,j,n,attach)    
+    
 # Define which fields we care about using dot notation for nested fields.
 FIELDS_OF_INTEREST = ["id", "key", "fields.summary", "fields.assignee.displayName", "fields.issuetype.name", "fields.parent.id" , "fields.duedate", "CommonStatus", "fields.priority.name"]
 
@@ -56,25 +58,28 @@ data = pd.merge(data,link, on ="id", how = "inner")
 # dropping column containing issueAPI URL and Index
 data = data.drop(["self"],axis=1)
 
-# Run loop on description 
-# desc = df["fields.description.content"]
-# desc_json = pd.json_normalize(desc, errors='ignore',  max_level=None)
+# Run loop on description and attachment  
+# desc = df[["id","fields.description.content"]]
+# desc_json = pd.json_normalize(desc["fields.description.content"], errors='ignore',  max_level=None)
 
-link["attachments"] = ""
-for i in range(len(link)):
-    temp = requests.get(
-    url = link["self"][i],
-    auth = (username, password))
-    temp = json.loads(temp.text)
-    n = len(temp["fields"]["attachment"])
-    attach = [1]*n
-    for j in range(n):
-        attach[j] = temp["fields"]["attachment"][j]["filename"]
-    link["attachments"][i] = attach
+# desc_text = pd.DataFrame(desc[["id"]])
+# desc_text["description"] = ""
+
+# for i in range(len(desc_json)):
+#     text = []
+#     for j in range(len(desc_json.columns)):
+#         if desc_json[i][j] == None:
+#             break 
+#         else: 
+#             desc_json2 = pd.json_normalize(desc_json[i][j], errors='ignore',  max_level=None)
+#             desc_json2 = pd.json_normalize(desc_json2["content"],errors='ignore', max_level=None)
+#             desc_json2 = pd.json_normalize(desc_json2[0][0],errors='ignore', max_level=None)
+#             text.append(desc_json2["text"][0])
+#     desc_text["description"][i] = text
+
+        
 
 
-# # Hard - coding fields for null return from External API
-data ["description"] = np.nan
 
 
 # # rename column names
@@ -89,7 +94,6 @@ data = data.rename(columns = {
       'fields.priority.name':'priority'
     })
 
-# Drop 
 
 # # change order of columns
 data = data[[
@@ -116,7 +120,7 @@ x = collection.delete_many({})
 print(x.deleted_count," documents deleted")
 
 
-data.reset_index(drop=bool, inplace=True)
+data.reset_index(drop= True, inplace=True)
 data_dict = data.to_dict("records")
 
 # Insert collection
