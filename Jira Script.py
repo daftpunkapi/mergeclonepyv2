@@ -5,6 +5,7 @@ import json
 from pymongo import MongoClient
 # import numpy as np
 
+
 # Get data from External API
 username = "daftpunkapi@gmail.com"
 password = "38nMKRsJFK2CGA57Dr3F7539"
@@ -41,7 +42,7 @@ for i in range(len(link)):
         attach[j] = temp["fields"]["attachment"][j]["filename"]
     link["attachments"][i] = attach
 
-del (i,j,n,attach)    
+del (i,j,n,attach, temp)    
     
 # Define which fields we care about using dot notation for nested fields.
 FIELDS_OF_INTEREST = ["id", "key", "fields.summary", "fields.assignee.displayName", "fields.issuetype.name", "fields.parent.id" , "fields.duedate", "CommonStatus", "fields.priority.name"]
@@ -49,38 +50,38 @@ FIELDS_OF_INTEREST = ["id", "key", "fields.summary", "fields.assignee.displayNam
 # # Filter to only display the fields we care about. To actually filter them out use df = df[FIELDS_OF_INTEREST].
 data = df[FIELDS_OF_INTEREST]
 
-# concate custom ticket URL 
+# Concate custom ticket URL 
 data["ticket_url"] = "https://"+subdomain+".atlassian.net/browse/"+data["key"]
 
 # Appending Attachment from loop output to main DF
 data = pd.merge(data,link, on ="id", how = "inner")
+del (link)
 
 # dropping column containing issueAPI URL and Index
 data = data.drop(["self"],axis=1)
 
-# Run loop on description and attachment  
+# Run loop on description
 # desc = df[["id","fields.description.content"]]
 # desc_json = pd.json_normalize(desc["fields.description.content"], errors='ignore',  max_level=None)
 
-# desc_text = pd.DataFrame(desc[["id"]])
-# desc_text["description"] = ""
+desc_text = pd.DataFrame(df[["id"]])
+desc_text["description"] = ""
 
-# for i in range(len(desc_json)):
-#     text = []
-#     for j in range(len(desc_json.columns)):
-#         if desc_json[i][j] == None:
-#             break 
-#         else: 
-#             desc_json2 = pd.json_normalize(desc_json[i][j], errors='ignore',  max_level=None)
-#             desc_json2 = pd.json_normalize(desc_json2["content"],errors='ignore', max_level=None)
-#             desc_json2 = pd.json_normalize(desc_json2[0][0],errors='ignore', max_level=None)
-#             text.append(desc_json2["text"][0])
-#     desc_text["description"][i] = text
+for i in range(len(res_1)):
+    text = []
+    if res_1[i]["fields"]["description"]["content"] == []:
+        pass
+    else:
+        for j in range(len(res_1[i]["fields"]["description"]["content"])):
+            temp = res_1[i]["fields"]["description"]["content"][j]["content"][0]["text"]
+            text.append(temp)
+    desc_text["description"][i] = text
 
-        
+del (i, j, temp, text)
 
-
-
+# Appending description to main df
+data = pd.merge(data,desc_text, on ="id", how = "inner")
+del desc_text
 
 # # rename column names
 data = data.rename(columns = {
